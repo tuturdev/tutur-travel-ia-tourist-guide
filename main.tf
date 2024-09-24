@@ -51,10 +51,9 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-# Verificar si la función Lambda ya existe
+# Intentar obtener información de la función Lambda existente
 data "aws_lambda_function" "existing_lambda" {
   function_name = "TuturRAGLambda"
-  ignore_errors = true  # Si no existe, ignorar el error
 }
 
 # Crear la función Lambda si no existe
@@ -111,6 +110,7 @@ EOT
 
 # Invocar la función Lambda con el contenido JSON generado por local_file
 resource "aws_lambda_invocation" "lambda_test" {
+  # Acceso indexado a la función Lambda
   function_name = length(aws_lambda_function.tutur_lambda) > 0 ? aws_lambda_function.tutur_lambda[0].function_name : aws_lambda_function.tutur_lambda_update[0].function_name
   input         = local_file.lambda_test_event.content
 
