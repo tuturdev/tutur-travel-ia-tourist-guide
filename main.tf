@@ -2,9 +2,24 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Crear el bucket S3 para los archivos JSON
+# Verifica si el bucket ya existe
+data "aws_s3_bucket" "existing_bucket" {
+  bucket = "0002-tutur-resources"
+  # Esto no fallará si el bucket no existe, simplemente continuará
+  count  = length(try([aws_s3_bucket.existing], [])) == 0 ? 1 : 0
+}
+
+# Generar un ID aleatorio para garantizar la unicidad del bucket
+resource "random_id" "bucket_id" {
+  byte_length = 4
+}
+
+# Si no existe, crea el bucket con un nombre único
 resource "aws_s3_bucket" "json_bucket" {
-  bucket = var.s3_bucket_name
+  bucket = "0002-tutur-resources-${random_id.bucket_id.hex}"
+  
+  # Crear el bucket solo si el anterior no existe
+  count  = length(try([aws_s3_bucket.existing], [])) == 0 ? 1 : 0
 }
 
 resource "aws_s3_bucket_acl" "json_bucket_acl" {

@@ -5,5 +5,5 @@ variable "region" {
 
 variable "s3_bucket_name" {
   description = "Nombre del bucket S3 para almacenar los archivos JSON"
-  default     = "0001-knowledge-base"
+  default     = "0002-tutur-resources"
 }
