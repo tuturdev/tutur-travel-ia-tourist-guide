@@ -4,7 +4,11 @@ provider "aws" {
 
 # Crear el bucket S3 para los archivos JSON
 resource "aws_s3_bucket" "json_bucket" {
-  bucket = "tutur-json-storage"
+  bucket = var.s3_bucket_name
+}
+
+resource "aws_s3_bucket_acl" "json_bucket_acl" {
+  bucket = aws_s3_bucket.json_bucket.id
   acl    = "private"
 }
 
@@ -15,8 +19,10 @@ resource "aws_lambda_function" "tutur_lambda" {
   role             = aws_iam_role.lambda_exec.arn
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.8"
-  source_code_hash = filebase64sha256("lambda_function.zip")
+  # Puedes omitir source_code_hash temporalmente para evitar el error
+  # source_code_hash = filebase64sha256("lambda_function.zip")
 }
+
 
 # API Gateway para exponer el endpoint
 resource "aws_api_gateway_rest_api" "tutur_api" {
