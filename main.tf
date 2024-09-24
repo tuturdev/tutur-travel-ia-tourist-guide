@@ -34,6 +34,8 @@ data "aws_iam_role" "existing_role" {
 
 # Definir IAM Role para Lambda
 resource "aws_iam_role" "lambda_exec" {
+  count = length(try([data.aws_iam_role.existing_role], [])) == 0 ? 1 : 0
+  
   name = "tutur_lambda_execution_role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -47,23 +49,18 @@ resource "aws_iam_role" "lambda_exec" {
       }
     ]
   })
-
-  count = length(try([data.aws_iam_role.existing_role], [])) == 0 ? 1 : 0
 }
 
 # Crear un Lambda para manejar la API
 resource "aws_lambda_function" "tutur_lambda" {
   function_name = "TuturRAGLambda"
-  role          = aws_iam_role.lambda_exec[0].arn
+  role          = length(aws_iam_role.lambda_exec) > 0 ? aws_iam_role.lambda_exec[0].arn : data.aws_iam_role.existing_role.arn
   handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.12"  # Cambiado a Python 3.12
+  runtime       = "python3.12"
 
   # Sobrescribir el código cada vez
   source_code_hash = filebase64sha256("lambda_function.zip")
   filename         = "lambda_function.zip"
-
-  # No se necesita 'count' aquí, ya que la función Lambda siempre debe existir
-  # Se sobreescribirá cada vez que se aplique
 }
 
 # API Gateway para exponer el endpoint
