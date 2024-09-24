@@ -2,30 +2,33 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Verifica si el bucket ya existe
+# Intentar obtener información del bucket existente
 data "aws_s3_bucket" "existing_bucket" {
   bucket = "0002-tutur-resources"
-  # Esto no fallará si el bucket no existe, simplemente continuará
-  count  = length(try([aws_s3_bucket.existing], [])) == 0 ? 1 : 0
 }
 
-# Generar un ID aleatorio para garantizar la unicidad del bucket
+# Generar un ID aleatorio para garantizar la unicidad del bucket si se crea uno nuevo
 resource "random_id" "bucket_id" {
   byte_length = 4
 }
 
-# Si no existe, crea el bucket con un nombre único
+# Solo crea el bucket si el bucket "0002-tutur-resources" no existe
 resource "aws_s3_bucket" "json_bucket" {
   bucket = "0002-tutur-resources-${random_id.bucket_id.hex}"
-  
-  # Crear el bucket solo si el anterior no existe
-  count  = length(try([aws_s3_bucket.existing], [])) == 0 ? 1 : 0
+
+  # Crear el bucket solo si el bloque de datos "existing_bucket" falla
+  count  = length(try([data.aws_s3_bucket.existing_bucket.id], [])) == 0 ? 1 : 0
 }
 
+# Definir permisos ACL para el bucket
 resource "aws_s3_bucket_acl" "json_bucket_acl" {
-  bucket = aws_s3_bucket.json_bucket.id
+  bucket = aws_s3_bucket.json_bucket[0].id
   acl    = "private"
+
+  # Solo aplica si el bucket fue creado
+  count  = length(try([data.aws_s3_bucket.existing_bucket.id], [])) == 0 ? 1 : 0
 }
+
 
 # Crear un Lambda para manejar la API
 resource "aws_lambda_function" "tutur_lambda" {
