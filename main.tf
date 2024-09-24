@@ -70,7 +70,7 @@ resource "aws_lambda_function" "tutur_lambda" {
 }
 
 # Actualizar el código de la función Lambda si ya existe
-resource "aws_lambda_function" "tutur_lambda_code_update" {
+resource "aws_lambda_function_code" "tutur_lambda_code_update" {
   count          = length(try([data.aws_lambda_function.existing_lambda.id], [])) > 0 ? 1 : 0
   function_name  = "TuturRAGLambda"
   s3_bucket      = aws_s3_bucket.json_bucket[0].bucket
@@ -109,7 +109,7 @@ resource "aws_lambda_invocation" "lambda_test" {
   input         = local_file.lambda_test_event.content
 
   # Asegura que se invoca la función solo después de que esté creada
-  depends_on = [aws_lambda_function.tutur_lambda, aws_lambda_function.tutur_lambda_code_update]
+  depends_on = [aws_lambda_function.tutur_lambda, aws_lambda_function_code.tutur_lambda_code_update]
 }
 
 # Output para mostrar la respuesta de la invocación Lambda
