@@ -54,40 +54,38 @@ resource "aws_iam_role" "lambda_exec" {
 # Verificar si la función Lambda ya existe
 data "aws_lambda_function" "existing_lambda" {
   function_name = "TuturRAGLambda"
+  ignore_errors = true  # Si no existe, ignorar el error
 }
 
-# Crear o actualizar la función Lambda
+# Crear la función Lambda si no existe
 resource "aws_lambda_function" "tutur_lambda" {
+  count          = length(try([data.aws_lambda_function.existing_lambda.id], [])) == 0 ? 1 : 0
   function_name  = "TuturRAGLambda"
   role           = length(aws_iam_role.lambda_exec) > 0 ? aws_iam_role.lambda_exec[0].arn : data.aws_iam_role.existing_role.arn
   handler        = "lambda_function.lambda_handler"
   runtime        = "python3.12"
-  
+
   # Sobrescribir el código cada vez
   source_code_hash = filebase64sha256("lambda_function.zip")
   filename         = "lambda_function.zip"
 
-  # Publicar el nuevo código
   publish = true
-
-  # No crear si la función ya existe
-  count = length(try([data.aws_lambda_function.existing_lambda.id], [])) == 0 ? 1 : 0
 }
 
 # Actualizar el código de la función Lambda si ya existe
 resource "aws_lambda_function" "tutur_lambda_update" {
-  function_name  = "TuturRAGLambda"
+  count = length(try([data.aws_lambda_function.existing_lambda.id], [])) > 0 ? 1 : 0
+
+  function_name  = data.aws_lambda_function.existing_lambda.function_name
   role           = length(aws_iam_role.lambda_exec) > 0 ? aws_iam_role.lambda_exec[0].arn : data.aws_iam_role.existing_role.arn
   handler        = "lambda_function.lambda_handler"
   runtime        = "python3.12"
-  
+
   # Sobrescribir el código cada vez
   source_code_hash = filebase64sha256("lambda_function.zip")
   filename         = "lambda_function.zip"
 
   publish = true
-
-  count = length(try([data.aws_lambda_function.existing_lambda.id], [])) > 0 ? 1 : 0
 }
 
 # API Gateway para exponer el endpoint
@@ -113,7 +111,6 @@ EOT
 
 # Invocar la función Lambda con el contenido JSON generado por local_file
 resource "aws_lambda_invocation" "lambda_test" {
-  # Acceso indexado a la función Lambda
   function_name = length(aws_lambda_function.tutur_lambda) > 0 ? aws_lambda_function.tutur_lambda[0].function_name : aws_lambda_function.tutur_lambda_update[0].function_name
   input         = local_file.lambda_test_event.content
 
