@@ -84,10 +84,10 @@ EOT
   filename = "${path.module}/lambda_test_event.json"
 }
 
-# Invocar la función Lambda con el evento JSON de prueba
+# Invocar la función Lambda con el contenido JSON generado por local_file
 resource "aws_lambda_invocation" "lambda_test" {
   function_name = aws_lambda_function.tutur_lambda.function_name
-  input         = file("${local_file.lambda_test_event.filename}")
+  input         = local_file.lambda_test_event.content
 
   # Asegura que se invoca la función solo después de que esté creada
   depends_on = [aws_lambda_function.tutur_lambda]
