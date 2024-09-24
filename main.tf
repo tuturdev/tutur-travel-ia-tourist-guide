@@ -35,7 +35,7 @@ data "aws_iam_role" "existing_role" {
 # Definir IAM Role para Lambda
 resource "aws_iam_role" "lambda_exec" {
   count = length(try([data.aws_iam_role.existing_role], [])) == 0 ? 1 : 0
-  
+
   name = "tutur_lambda_execution_role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -67,4 +67,33 @@ resource "aws_lambda_function" "tutur_lambda" {
 resource "aws_api_gateway_rest_api" "tutur_api" {
   name        = "Tutur API"
   description = "API para gestionar los paseos de Tutur"
+}
+
+# Crear un archivo local para almacenar el evento JSON de prueba
+resource "local_file" "lambda_test_event" {
+  content  = <<EOT
+{
+  "country": "Ecuador",
+  "city": "Baños",
+  "group": "familia",
+  "participants": ["4 adultos"],
+  "days": 4,
+  "activities": ["Aventura"]
+}
+EOT
+  filename = "${path.module}/lambda_test_event.json"
+}
+
+# Invocar la función Lambda con el evento JSON de prueba
+resource "aws_lambda_invocation" "lambda_test" {
+  function_name = aws_lambda_function.tutur_lambda.function_name
+  input         = file("${local_file.lambda_test_event.filename}")
+
+  # Asegura que se invoca la función solo después de que esté creada
+  depends_on = [aws_lambda_function.tutur_lambda]
+}
+
+# Output para mostrar la respuesta de la invocación Lambda
+output "lambda_test_result" {
+  value = aws_lambda_invocation.lambda_test.result
 }
