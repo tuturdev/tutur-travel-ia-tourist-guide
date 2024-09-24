@@ -29,7 +29,7 @@ resource "aws_s3_bucket_acl" "json_bucket_acl" {
 
 # Intentar obtener información del rol existente
 data "aws_iam_role" "existing_role" {
-  role_name = "tutur_lambda_execution_role"
+  name = "tutur_lambda_execution_role"
 }
 
 # Definir IAM Role para Lambda
