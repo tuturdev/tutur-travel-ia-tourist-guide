@@ -113,7 +113,8 @@ EOT
 
 # Invocar la función Lambda con el contenido JSON generado por local_file
 resource "aws_lambda_invocation" "lambda_test" {
-  function_name = aws_lambda_function.tutur_lambda.function_name
+  # Acceso indexado a la función Lambda
+  function_name = length(aws_lambda_function.tutur_lambda) > 0 ? aws_lambda_function.tutur_lambda[0].function_name : aws_lambda_function.tutur_lambda_update[0].function_name
   input         = local_file.lambda_test_event.content
 
   # Asegura que se invoca la función solo después de que esté creada
