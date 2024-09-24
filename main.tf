@@ -51,63 +51,20 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-# Verificar si la función Lambda ya existe
-data "aws_lambda_function" "existing_lambda" {
-  function_name = "TuturRAGLambda"
-}
-
-# Crear la función Lambda solo si no existe
-resource "aws_lambda_function" "tutur_lambda_create" {
-  count = length(try([data.aws_lambda_function.existing_lambda.id], [])) == 0 ? 1 : 0
-
+# Crear un Lambda para manejar la API
+resource "aws_lambda_function" "tutur_lambda" {
   function_name = "TuturRAGLambda"
   role          = length(aws_iam_role.lambda_exec) > 0 ? aws_iam_role.lambda_exec[0].arn : data.aws_iam_role.existing_role.arn
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.12"
-  filename      = "lambda_function.zip"
+
+  # Sobrescribir el código cada vez
   source_code_hash = filebase64sha256("lambda_function.zip")
-
-  publish = true
+  filename         = "lambda_function.zip"
 }
 
-# Actualizar solo el código si la función ya existe
-resource "aws_lambda_function" "tutur_lambda_update" {
-  count = length(try([data.aws_lambda_function.existing_lambda.id], [])) > 0 ? 1 : 0
-
-  function_name = data.aws_lambda_function.existing_lambda.function_name
-  role          = length(aws_iam_role.lambda_exec) > 0 ? aws_iam_role.lambda_exec[0].arn : data.aws_iam_role.existing_role.arn
-  handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.12"
-  filename      = "lambda_function.zip"
-  source_code_hash = filebase64sha256("lambda_function.zip")
-
-  publish = true
-}
-
-# Crear un archivo local para almacenar el evento JSON de prueba
-resource "local_file" "lambda_test_event" {
-  content = <<EOT
-{
-  "country": "Ecuador",
-  "city": "Baños",
-  "group": "familia",
-  "participants": ["4 adultos"],
-  "days": 4,
-  "activities": ["Aventura"]
-}
-EOT
-  filename = "${path.module}/lambda_test_event.json"
-}
-
-# Invocar la función Lambda con el contenido JSON generado por local_file
-resource "aws_lambda_invocation" "lambda_test" {
-  function_name = length(aws_lambda_function.tutur_lambda_create) > 0 ? aws_lambda_function.tutur_lambda_create[0].function_name : aws_lambda_function.tutur_lambda_update[0].function_name
-  input         = local_file.lambda_test_event.content
-
-  depends_on = [aws_lambda_function.tutur_lambda_create, aws_lambda_function.tutur_lambda_update]
-}
-
-# Output para mostrar la respuesta de la invocación Lambda
-output "lambda_test_result" {
-  value = aws_lambda_invocation.lambda_test.result
+# API Gateway para exponer el endpoint
+resource "aws_api_gateway_rest_api" "tutur_api" {
+  name        = "Tutur API"
+  description = "API para gestionar los paseos de Tutur"
 }
