@@ -33,7 +33,7 @@ resource "aws_s3_bucket_acl" "json_bucket_acl" {
 resource "aws_lambda_function" "tutur_lambda" {
   filename         = "lambda_function.zip"
   function_name    = "TuturRAGLambda"
-  role             = aws_iam_role.lambda_exec.arn
+  role             = aws_iam_role.lambda_exec[0].arn  # Acceso a la instancia indexada
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.8"
   # Puedes omitir source_code_hash temporalmente para evitar el error
@@ -73,10 +73,10 @@ resource "aws_iam_role" "lambda_exec" {
 
 # Política de IAM (solo si se creó el rol)
 resource "aws_iam_role_policy" "lambda_exec_policy" {
-  count = aws_iam_role.lambda_exec.count
+  count = length(aws_iam_role.lambda_exec)  # Uso de length() en lugar de count
 
   name   = "tutur_lambda_policy"
-  role   = aws_iam_role.lambda_exec[0].name
+  role   = aws_iam_role.lambda_exec[0].name  # Acceso a la instancia indexada
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
