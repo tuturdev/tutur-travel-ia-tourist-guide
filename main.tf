@@ -27,6 +27,11 @@ resource "aws_s3_bucket_acl" "json_bucket_acl" {
   count  = length(try([data.aws_s3_bucket.existing_bucket.id], [])) == 0 ? 1 : 0
 }
 
+# Intentar obtener información del rol existente
+data "aws_iam_role" "existing_role" {
+  role_name = "tutur_lambda_execution_role"
+}
+
 # Definir IAM Role para Lambda
 resource "aws_iam_role" "lambda_exec" {
   name = "tutur_lambda_execution_role"
