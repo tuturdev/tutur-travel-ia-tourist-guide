@@ -51,16 +51,35 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-# Crear un Lambda para manejar la API
-resource "aws_lambda_function" "tutur_lambda" {
+# Verificar si la función Lambda ya existe
+data "aws_lambda_function" "existing_lambda" {
   function_name = "TuturRAGLambda"
-  role          = length(aws_iam_role.lambda_exec) > 0 ? aws_iam_role.lambda_exec[0].arn : data.aws_iam_role.existing_role.arn
-  handler       = "lambda_function.lambda_handler"
-  runtime       = "python3.12"
+}
+
+# Crear la función Lambda si no existe
+resource "aws_lambda_function" "tutur_lambda" {
+  count          = length(try([data.aws_lambda_function.existing_lambda.id], [])) == 0 ? 1 : 0
+  function_name  = "TuturRAGLambda"
+  role           = aws_iam_role.lambda_exec[0].arn
+  handler        = "lambda_function.lambda_handler"
+  runtime        = "python3.12"
 
   # Sobrescribir el código cada vez
   source_code_hash = filebase64sha256("lambda_function.zip")
   filename         = "lambda_function.zip"
+}
+
+# Actualizar el código de la función Lambda si ya existe
+resource "aws_lambda_function" "tutur_lambda_code_update" {
+  count          = length(try([data.aws_lambda_function.existing_lambda.id], [])) > 0 ? 1 : 0
+  function_name  = "TuturRAGLambda"
+  s3_bucket      = aws_s3_bucket.json_bucket[0].bucket
+  s3_key         = "lambda_function.zip"
+
+  # Sobrescribir el código cada vez
+  source_code_hash = filebase64sha256("lambda_function.zip")
+
+  depends_on = [aws_lambda_function.tutur_lambda]
 }
 
 # API Gateway para exponer el endpoint
@@ -90,7 +109,7 @@ resource "aws_lambda_invocation" "lambda_test" {
   input         = local_file.lambda_test_event.content
 
   # Asegura que se invoca la función solo después de que esté creada
-  depends_on = [aws_lambda_function.tutur_lambda]
+  depends_on = [aws_lambda_function.tutur_lambda, aws_lambda_function.tutur_lambda_code_update]
 }
 
 # Output para mostrar la respuesta de la invocación Lambda
