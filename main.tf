@@ -16,7 +16,7 @@ resource "random_id" "bucket_id" {
 resource "aws_s3_bucket" "json_bucket" {
   bucket = "0002-tutur-resources-${random_id.bucket_id.hex}"
 
-  count  = length(try([data.aws_s3_bucket.existing_bucket.id], [])) == 0 ? 1 : 0
+  count = length(try([data.aws_s3_bucket.existing_bucket.id], [])) == 0 ? 1 : 0
 }
 
 # Definir permisos ACL para el bucket
@@ -24,7 +24,7 @@ resource "aws_s3_bucket_acl" "json_bucket_acl" {
   bucket = aws_s3_bucket.json_bucket[0].id
   acl    = "private"
 
-  count  = length(try([data.aws_s3_bucket.existing_bucket.id], [])) == 0 ? 1 : 0
+  count = length(try([data.aws_s3_bucket.existing_bucket.id], [])) == 0 ? 1 : 0
 }
 
 # Intentar obtener información del rol existente
@@ -58,12 +58,12 @@ resource "aws_lambda_function" "tutur_lambda" {
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.12"  # Cambiado a Python 3.12
 
-  # Este bloque permite sobrescribir el código cada vez
+  # Sobrescribir el código cada vez
   source_code_hash = filebase64sha256("lambda_function.zip")
   filename         = "lambda_function.zip"
 
-  # Crea la función solo si no existe
-  count = length(try([aws_lambda_function.tutur_lambda], [])) == 0 ? 1 : 0
+  # No se necesita 'count' aquí, ya que la función Lambda siempre debe existir
+  # Se sobreescribirá cada vez que se aplique
 }
 
 # API Gateway para exponer el endpoint
