@@ -57,7 +57,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Zip Lambda Function
-        run: zip -j lambda_function.zip lambda_function.py
+        run: zip -j lambda_function.zip lambda/lambda_function.py  # Asegúrate de que el archivo esté en el lugar correcto
 
       - name: Upload Lambda to S3
         run: aws s3 cp lambda_function.zip s3://0002-tutur-resources
