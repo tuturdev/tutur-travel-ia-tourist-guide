@@ -32,17 +32,17 @@ data "aws_iam_role" "existing_role" {
   name = "tutur_lambda_execution_role"
 }
 
-# Definir IAM Role para Lambda
+# Definir IAM Role para Lambda si no existe
 resource "aws_iam_role" "lambda_exec" {
-  count = length(try([data.aws_iam_role.existing_role], [])) == 0 ? 1 : 0
+  count = length(try([data.aws_iam_role.existing_role.id], [])) == 0 ? 1 : 0
 
   name = "tutur_lambda_execution_role"
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
         Principal = {
           Service = "lambda.amazonaws.com"
         }
@@ -59,7 +59,7 @@ data "aws_lambda_function" "existing_lambda" {
 # Crear o actualizar la función Lambda
 resource "aws_lambda_function" "tutur_lambda" {
   function_name  = "TuturRAGLambda"
-  role           = aws_iam_role.lambda_exec[0].arn
+  role           = length(aws_iam_role.lambda_exec) > 0 ? aws_iam_role.lambda_exec[0].arn : data.aws_iam_role.existing_role.arn
   handler        = "lambda_function.lambda_handler"
   runtime        = "python3.12"
   
@@ -77,7 +77,7 @@ resource "aws_lambda_function" "tutur_lambda" {
 # Actualizar el código de la función Lambda si ya existe
 resource "aws_lambda_function" "tutur_lambda_update" {
   function_name  = "TuturRAGLambda"
-  role           = aws_iam_role.lambda_exec[0].arn
+  role           = length(aws_iam_role.lambda_exec) > 0 ? aws_iam_role.lambda_exec[0].arn : data.aws_iam_role.existing_role.arn
   handler        = "lambda_function.lambda_handler"
   runtime        = "python3.12"
   
