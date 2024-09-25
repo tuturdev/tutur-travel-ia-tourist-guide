@@ -4,13 +4,13 @@ provider "aws" {
 
 # Incluir los módulos y recursos
 module "lambda_module" {
-  source = "./modules/lambda"
+  source = "modules/lambda"
 }
 
 module "s3_bucket_module" {
-  source = "./modules/s3_bucket"
+  source = "modules/s3_bucket"
 }
 
 module "api_gateway_module" {
-  source = "./modules/api_gateway"
+  source = "modules/api_gateway"
 }
