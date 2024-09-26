@@ -27,17 +27,7 @@ jobs:
         with:
           terraform_version: 1.0.0
 
-      # Instalar dependencias de Python en un directorio específico
-      - name: Install Python dependencies
-        run: |
-          pip install -r lambda/requirements.txt -t ./lambda_package
-          cp lambda/lambda_function.py ./lambda_package/
-
-      # Crear un archivo ZIP que incluya las dependencias y el código Lambda
-      - name: Zip Lambda Function
-        run: |
-          cd lambda_package
-          zip -r ../lambda_function.zip .
+      # Omitir la parte de instalación de dependencias y creación del archivo ZIP
 
       - name: Terraform Init
         run: terraform init
@@ -68,9 +58,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # Subir el archivo ZIP completo (código + dependencias) a S3
+      # Subir el archivo ZIP existente (código + dependencias) a S3
       - name: Upload Lambda to S3
-        run: aws s3 cp lambda_function.zip s3://0002-tutur-resources
+        run: aws s3 cp lambda/lambda_function.zip s3://0002-tutur-resources
 
       # Desplegar la nueva versión de la Lambda desde S3
       - name: Deploy Lambda Function
