@@ -44,3 +44,17 @@ resource "aws_iam_role" "lambda_exec" {
     ]
   })
 }
+
+# modules/lambda/lambda.tf
+
+# Exponer el nombre de la función Lambda
+output "lambda_function_name" {
+  value = aws_lambda_function.tutur_lambda[0].function_name
+  description = "El nombre de la función Lambda creada"
+}
+
+# Exponer el ARN de la función Lambda
+output "lambda_function_arn" {
+  value = aws_lambda_function.tutur_lambda[0].arn
+  description = "El ARN de la función Lambda creada"
+}
