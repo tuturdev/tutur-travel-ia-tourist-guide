@@ -26,6 +26,10 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.0.0
+        
+      # Paso 4: Destruir solo la función Lambda
+      - name: Destroy Lambda Function
+        run: terraform destroy -target=aws_lambda_function.tutur_lambda -auto-approve
 
       - name: Zip Lambda Function
         run: zip -j lambda_function.zip lambda/lambda_function.py  
