@@ -5,7 +5,6 @@ data "aws_lambda_function" "existing_lambda" {
   function_name = "TuturRAGLambda"
 }
 
-# Crear un Lambda solo si no existe
 resource "aws_lambda_function" "tutur_lambda" {
   count = length(try([data.aws_lambda_function.existing_lambda.id], [])) == 0 ? 1 : 0
 
@@ -13,7 +12,7 @@ resource "aws_lambda_function" "tutur_lambda" {
   role          = aws_iam_role.lambda_exec[0].arn
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.12"
-  timeout       =  180  
+  timeout       = 60  # Incrementa temporalmente a 60 segundos
 
   # Sobrescribir el código cada vez
   source_code_hash = filebase64sha256("lambda_function.zip")
@@ -21,6 +20,7 @@ resource "aws_lambda_function" "tutur_lambda" {
 
   publish = true
 }
+
 
 # Intentar obtener información del rol existente
 data "aws_iam_role" "existing_role" {
