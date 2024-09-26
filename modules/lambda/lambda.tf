@@ -14,9 +14,9 @@ resource "aws_lambda_function" "tutur_lambda" {
   runtime       = "python3.12"
   timeout       = 200  # Incrementa temporalmente a 60 segundos
 
-  # Sobrescribir el código cada vez
-  source_code_hash = filebase64sha256("lambda_function.zip")
-  filename         = "lambda_function.zip"
+   # Actualiza la ruta del archivo .zip
+  filename         = "lambda/lambda_function.zip"
+  source_code_hash = filebase64sha256("lambda/lambda_function.zip")  # Actualiza la ruta aquí también
 
   publish = true
 }
