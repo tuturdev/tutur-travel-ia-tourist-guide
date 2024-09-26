@@ -47,11 +47,12 @@ resource "aws_iam_role" "lambda_exec" {
 
 # modules/lambda/lambda.tf
 
-# Exponer el nombre de la función Lambda solo si existe
+# Intentar obtener el nombre de la función Lambda existente o creada
 output "lambda_function_name" {
-  value       = length(aws_lambda_function.tutur_lambda) > 0 ? aws_lambda_function.tutur_lambda[0].function_name : ""
-  description = "El nombre de la función Lambda creada"
+  value = length(aws_lambda_function.tutur_lambda) > 0 ? aws_lambda_function.tutur_lambda[0].function_name : data.aws_lambda_function.existing_lambda.function_name
+  description = "El nombre de la función Lambda creada o existente"
 }
+
 
 # Exponer el ARN de la función Lambda solo si existe
 output "lambda_function_arn" {
