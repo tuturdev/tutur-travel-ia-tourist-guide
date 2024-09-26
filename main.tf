@@ -15,7 +15,6 @@ module "api_gateway_module" {
   source = "./modules/api_gateway"
 }
 
-
 # Archivo JSON para test
 resource "local_file" "lambda_test_event" {
   content  = <<EOT
@@ -31,10 +30,10 @@ EOT
   filename = "${path.module}/lambda_test_event.json"
 }
 
-# Invocar la función Lambda para test usando el output del módulo lambda_module
+# Invocar la función Lambda para test usando el contenido del archivo local_file
 resource "aws_lambda_invocation" "lambda_test" {
   function_name = module.lambda_module.lambda_function_name
-  input         = file("${local_file.lambda_test_event.filename}")
+  input         = local_file.lambda_test_event.content  # Usar el contenido del archivo directamente
 
   depends_on = [module.lambda_module]
 }
