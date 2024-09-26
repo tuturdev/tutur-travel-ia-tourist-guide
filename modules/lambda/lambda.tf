@@ -13,7 +13,7 @@ resource "aws_lambda_function" "tutur_lambda" {
   role          = aws_iam_role.lambda_exec[0].arn
   handler       = "lambda_function.lambda_handler"
   runtime       = "python3.12"
-  timeout       = 180  
+  timeout       =  180  
 
   # Sobrescribir el código cada vez
   source_code_hash = filebase64sha256("lambda_function.zip")
