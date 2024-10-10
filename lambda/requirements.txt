@@ -1,9 +1,0 @@
-pinecone-client
-langchain-openai
-langchain-community
-typing_extensions
-langchain
-langchain_pinecone
-openai
-boto3
-langchain-aws
