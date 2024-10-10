@@ -1,18 +1,18 @@
-FROM public.ecr.aws/lambda/python:3.12
+# Imagen base de Python
+FROM python:3.8-slim
 
-# Copia las dependencias y el código en el contenedor
-COPY requirements.txt ./
+# Establecer el directorio de trabajo
+WORKDIR /app
 
-# Instala las dependencias
-RUN pip install -r requirements.txt
+# Instalar las dependencias
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el código Lambda en el contenedor
-COPY lambda_function.py ./
+# Copiar el código de la aplicación
+COPY . .
 
-# Comando para ejecutar la Lambda
-CMD ["lambda_function.lambda_handler"]
+# Exponer el puerto para la aplicación
+EXPOSE 8080
 
-# Cambia algo en el Dockerfile
-# Actualizando el contenedor
-RUN echo "Actualización de la imagen" > /tmp/update.txt
-
+# Comando para correr la aplicación usando Uvicorn (FastAPI server)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
