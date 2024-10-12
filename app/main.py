@@ -181,3 +181,7 @@ def generate_guide(request: GuideRequest):
         raise http_ex  # Relanzar excepciones HTTP ya manejadas
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
