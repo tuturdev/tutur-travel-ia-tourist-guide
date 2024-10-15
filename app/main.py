@@ -24,12 +24,19 @@ llm = None
 qa_chain = None
 dynamodb = boto3.client('dynamodb')
 
+def remove_duplicates(principal_ids):
+    # Convertir la lista en un conjunto para eliminar duplicados y luego convertir de nuevo a lista
+    return list(set(principal_ids))
+
 def query_dynamo(principal_ids):
     try:
+        print(f"Data input: {principal_ids}")
+        ids = remove_duplicates(principal_ids)
+        print(f"Data sin duplicados: {ids}")
         # Preparar la estructura de Keys para batch_get_item
-        keys = [{'principalId': {'S': principal_id}} for principal_id in principal_ids]
+        keys = [{'principalId': {'S': principal_id}} for principal_id in ids]
 
-        print(keys)
+       
         
         # Realizar la consulta en batch
         response = dynamodb.batch_get_item(
@@ -53,10 +60,10 @@ def query_dynamo(principal_ids):
             formatted_item = {
                 'principalId': item['principalId']['S'],
                 'description': item.get('description', {}).get('S', ''),
-                'coordinates': [
-                    float(item.get('location_lat', {}).get('N', 0.0)),
-                    float(item.get('location_lng', {}).get('N', 0.0))
-                ],
+                'coordinates': {
+                    'latitude':float(item.get('location_lat', {}).get('N', 0.0)),
+                    'longitude':float(item.get('location_lng', {}).get('N', 0.0))
+                },
                 'totalScore': float(item.get('totalScore', {}).get('N', 0.0)),
                 'reviewsCount': int(item.get('reviewsCount', {}).get('N', 0)),
                 'estimated_time': item.get('estimated_time', {}).get('S', ''),
