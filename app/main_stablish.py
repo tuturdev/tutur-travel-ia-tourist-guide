@@ -25,7 +25,6 @@ def query_dynamo(principal_ids):
     try:
         # Preparar la estructura de Keys para batch_get_item
         keys = [{'principalId': {'S': principal_id}} for principal_id in principal_ids]
-        
         # Realizar la consulta en batch
         response = dynamodb.batch_get_item(
             RequestItems={

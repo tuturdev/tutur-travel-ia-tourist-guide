@@ -12,6 +12,7 @@ from langchain.prompts import PromptTemplate
 import boto3
 from app.country_code_service import router as country_code_router 
 from app.activities_service import router as activities_router
+from app.destinations_service import router as destination_router
 
 # Inicializamos FastAPI
 app = FastAPI()
@@ -27,6 +28,8 @@ def query_dynamo(principal_ids):
     try:
         # Preparar la estructura de Keys para batch_get_item
         keys = [{'principalId': {'S': principal_id}} for principal_id in principal_ids]
+
+        print(keys)
         
         # Realizar la consulta en batch
         response = dynamodb.batch_get_item(
@@ -255,7 +258,7 @@ def generate_guide(request: GuideRequest):
 
 app.include_router(country_code_router, prefix="/v1/tutur/info")
 app.include_router(activities_router, prefix="/v1/tutur/info")
-
+app.include_router(destination_router, prefix="/v1/tutur/info")
 @app.get("/health")
 def health_check():
     return {"status": "ok heath"}
