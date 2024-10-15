@@ -10,6 +10,8 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 import boto3
+from app.country_code_service import router as country_code_router 
+from app.activities_service import router as activities_router
 
 # Inicializamos FastAPI
 app = FastAPI()
@@ -100,10 +102,16 @@ def initialize_services():
 # Función para hacer el merge de los datos de DynamoDB con las actividades del itinerario
 def merge_activity_data(itinerary, dynamo_dict):
     for day in itinerary:
+        # Filtrar las actividades que tienen un match en dynamo_dict
+        day['activities'] = [
+            activity for activity in day['activities']
+            if activity['principalId'] in dynamo_dict
+        ]
+        
+        # Actualizar las actividades que hacen match
         for activity in day['activities']:
             principal_id = activity['principalId']
             if principal_id in dynamo_dict:
-                # Actualizamos la actividad con los datos de DynamoDB
                 activity.update({
                     'totalScore': dynamo_dict[principal_id].get('totalScore', 0.0),
                     'reviewsCount': dynamo_dict[principal_id].get('reviewsCount', 0),
@@ -114,6 +122,7 @@ def merge_activity_data(itinerary, dynamo_dict):
                     's3Images': dynamo_dict[principal_id].get('s3Images', {})
                 })
     return itinerary
+
 
 # Definir el modelo de entrada usando Pydantic para validación
 class GuideRequest(BaseModel):
@@ -243,7 +252,10 @@ def generate_guide(request: GuideRequest):
         raise http_ex  # Relanzar excepciones HTTP ya manejadas
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+app.include_router(country_code_router, prefix="/v1/tutur/info")
+app.include_router(activities_router, prefix="/v1/tutur/info")
+
 @app.get("/health")
 def health_check():
     return {"status": "ok heath"}
