@@ -113,6 +113,12 @@ def generate_guide(request: GuideRequest):
         - Nombre del lugar
         - Descripción breve
         - Coordenadas de latitud y longitud
+        - Horarios
+        - Timpo estimado de permanencia
+        - reviewsCount
+        - totalScore
+        - s3ImageUrl
+        - s3ImageUri
 
         El formato de salida debe ser formato json (las claves deben estar en ingles en formato lower camel case) y formateado a utf-8, no incluyas nada adicional que no sea la respuesta.
         """
