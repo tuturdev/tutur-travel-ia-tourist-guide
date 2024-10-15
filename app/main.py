@@ -31,7 +31,7 @@ def query_dynamo(principal_ids):
             RequestItems={
                 'tutur-activities': {
                     'Keys': keys,
-                    'ProjectionExpression': 'principalId, totalScore, reviewsCount, estimated_time, opening_hours, s3Images'
+                    'ProjectionExpression': 'principalId, description,location_lat,location_lng,totalScore, reviewsCount, estimated_time, opening_hours, s3Images'
                 }
             }
         )
@@ -47,6 +47,11 @@ def query_dynamo(principal_ids):
             
             formatted_item = {
                 'principalId': item['principalId']['S'],
+                'description': item.get('description', {}).get('S', ''),
+                'coordinates': [
+                    float(item.get('location_lat', {}).get('N', 0.0)),
+                    float(item.get('location_lng', {}).get('N', 0.0))
+                ],
                 'totalScore': float(item.get('totalScore', {}).get('N', 0.0)),
                 'reviewsCount': int(item.get('reviewsCount', {}).get('N', 0)),
                 'estimated_time': item.get('estimated_time', {}).get('S', ''),
@@ -103,6 +108,8 @@ def merge_activity_data(itinerary, dynamo_dict):
                     'totalScore': dynamo_dict[principal_id].get('totalScore', 0.0),
                     'reviewsCount': dynamo_dict[principal_id].get('reviewsCount', 0),
                     'estimated_time': dynamo_dict[principal_id].get('estimated_time', ''),
+                    'description': dynamo_dict[principal_id].get('description', ''),
+                    'coordinates': dynamo_dict[principal_id].get('coordinates', []),
                     'opening_hours': dynamo_dict[principal_id].get('opening_hours', ''),
                     's3Images': dynamo_dict[principal_id].get('s3Images', {})
                 })
@@ -152,7 +159,7 @@ def generate_guide(request: GuideRequest):
         Si no hay actividades suficientes que cumplan con todos los requisitos, ajusta las opciones cercanas dentro del destino {city}, 
         pero siempre asegúrate de que la suma de tiempo sea menor o igual a las 10 horas diarias y que los lugares estén abiertos en los horarios indicados.
         Si todavía queda tiempo que cubrir, no lo hagas; deja la guía hasta ese punto.
-        No incluyas actividades de otros destinos.
+        No incluyas actividades de otras ciudades diferentes a {city}.
         No repitas actividades.
 
         Datos adicionales:
@@ -161,10 +168,8 @@ def generate_guide(request: GuideRequest):
         Participantes: {participants}
 
         Para cada lugar del itinerario, proporciona los siguientes datos NO INCLUIR NADA ADICIONAL A ESTOS 4 ATRIBUTOS:
-        - PrincipalId
-        - Nombre del lugar
-        - Descripción breve
-        - Coordenadas de latitud y longitud
+        - Id unico o PrincipalId (este campo es mandatorio y debe salir de la base de conocimientos no autogeneres ni te inventes) y el nombre de esta eqtiqueta simepre debe ser principalId
+        - Nombre del lugar (este campo es mandatorio y debe salir de la base de conocimientos no autogeneres ni te inventes)y el nombre de esta eqtiqueta simepre debe ser name
 
         El formato de salida debe ser formato json (las claves deben estar en ingles en formato lower camel case) y formateado a utf-8, no incluyas nada adicional que no sea la respuesta.
         """
@@ -206,6 +211,8 @@ def generate_guide(request: GuideRequest):
             print(f"Error al decodificar JSON: {e}")
             print(f"Texto problemático: {output_text}")
             raise HTTPException(status_code=500, detail=f"Error al decodificar la respuesta JSON: {str(e)}")
+        
+        print(f"respuesta IA:{body}")
         # Usar una list comprehension para extraer todos los 'principalId'
         principal_ids = [
             activity['principalId']
@@ -213,6 +220,8 @@ def generate_guide(request: GuideRequest):
             for activity in day['activities']
             if 'principalId' in activity  # Verificamos si 'principalId' existe
         ]
+
+        print(f"ids buscar en bdd:{principal_ids}")
         db_response = query_dynamo(principal_ids)
         # Verificar si db_response es None
         if db_response is None:
