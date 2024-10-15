@@ -121,17 +121,9 @@ class GuideRequest(BaseModel):
 @app.post("/generate-guide")
 def generate_guide(request: GuideRequest):
     try:
-        start_time = datetime.now()
-        print(f"Inicio del proceso: {start_time}")
-        
-        # Inicializar servicios si no están inicializados
-        service_start_time = datetime.now()
+              
         initialize_services()
-        service_end_time = datetime.now()
-        print(f"Servicios inicializados en: {(service_end_time - service_start_time).total_seconds()} segundos")
-        
-        # Convertir fechas a formato legible
-        date_parse_start_time = datetime.now()
+                
         try:
             start_dt = datetime.strptime(request.startDatetime, "%Y-%m-%d %H:%M:%S")
             end_dt = datetime.strptime(request.endDatetime, "%Y-%m-%d %H:%M:%S")
@@ -140,11 +132,7 @@ def generate_guide(request: GuideRequest):
         
         formatted_start_datetime = start_dt.strftime("%Y-%m-%d %H:%M:%S")
         formatted_end_datetime = end_dt.strftime("%Y-%m-%d %H:%M:%S")
-        date_parse_end_time = datetime.now()
-        print(f"Conversión de fechas tomó: {(date_parse_end_time - date_parse_start_time).total_seconds()} segundos")
-        
-        # Prepara el texto del prompt
-        prompt_start_time = datetime.now()
+ 
         participants_text = ', '.join([f"{key}: {value}" for key, value in request.participants.items()])
         activities_text = ', '.join(request.activities)
 
@@ -194,15 +182,8 @@ def generate_guide(request: GuideRequest):
             startDatetime=formatted_start_datetime,
             endDatetime=formatted_end_datetime
         )
-        prompt_end_time = datetime.now()
-        print(f"Generación del prompt tomó: {(prompt_end_time - prompt_start_time).total_seconds()} segundos")
-
         # Ejecutar el flujo de QA
-        qa_start_time = datetime.now()
         result = qa_chain.invoke({"query": formatted_prompt})
-        qa_end_time = datetime.now()
-        print(f"Tiempo de ejecución del flujo QA: {(qa_end_time - qa_start_time).total_seconds()} segundos")
-        
         output_text = result.get('result', '')
 
         if not output_text.strip():
@@ -225,9 +206,6 @@ def generate_guide(request: GuideRequest):
             print(f"Error al decodificar JSON: {e}")
             print(f"Texto problemático: {output_text}")
             raise HTTPException(status_code=500, detail=f"Error al decodificar la respuesta JSON: {str(e)}")
-        json_parse_end_time = datetime.now()
-        print(f"Decodificación de JSON tomó: {(json_parse_end_time - json_parse_start_time).total_seconds()} segundos")
-        ids_start_time = datetime.now()
         # Usar una list comprehension para extraer todos los 'principalId'
         principal_ids = [
             activity['principalId']
@@ -235,14 +213,7 @@ def generate_guide(request: GuideRequest):
             for activity in day['activities']
             if 'principalId' in activity  # Verificamos si 'principalId' existe
         ]
-        ids_end_time = datetime.now()
-        print(f"Tiempo de obtener ids: {(ids_end_time - ids_start_time).total_seconds()} segundos")
-        
-        db_start_time = datetime.now()
         db_response = query_dynamo(principal_ids)
-        db_end_time = datetime.now()
-        print(f"Tiempo de obtener db: {(db_end_time - db_start_time).total_seconds()} segundos")
-        print(db_response)
         # Verificar si db_response es None
         if db_response is None:
             raise HTTPException(status_code=500, detail="Error al consultar DynamoDB o no se encontraron resultados.")
@@ -250,16 +221,9 @@ def generate_guide(request: GuideRequest):
         dynamo_dict = {item['principalId']: item for item in db_response}
         # Hacer el merge de los datos de DynamoDB con el itinerario
         merged_itinerary = merge_activity_data(body['itinerary'], dynamo_dict)
-
         body['itinerary'] = merged_itinerary
         # Generar un código aleatorio para touristGuideId
         tourist_guide_id = generate_random_guide_id()
-
-        # Fin del proceso
-        end_time = datetime.now()
-        total_time = (end_time - start_time).total_seconds()
-        print(f"Tiempo total del proceso: {total_time} segundos")
-
         # Devolver la respuesta
         return {
             "touristGuideId": tourist_guide_id,
