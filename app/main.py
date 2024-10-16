@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import json
-import random
 from datetime import datetime
-from app.utils import get_secret, generate_random_guide_id
+from app.utils import  insert_itinerary_in_background,generate_unique_id
+from app.secrets import get_secret
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -13,6 +13,8 @@ import boto3
 from app.country_code_service import router as country_code_router 
 from app.activities_service import router as activities_router
 from app.destinations_service import router as destination_router
+from typing import Optional
+import threading
 
 # Inicializamos FastAPI
 app = FastAPI()
@@ -136,6 +138,7 @@ def merge_activity_data(itinerary, dynamo_dict):
 
 # Definir el modelo de entrada usando Pydantic para validación
 class GuideRequest(BaseModel):
+    clientId: Optional[str] = Field(None, description="Optional client ID")
     country: str = Field(..., description="Country for the itinerary")
     city: str = Field(..., description="City for the itinerary")
     group: str = Field(..., description="Group for the itinerary")
@@ -143,6 +146,7 @@ class GuideRequest(BaseModel):
     activities: list = Field(..., description="List of activities for the itinerary")
     startDatetime: str = Field(..., description="Start datetime in format YYYY-MM-DD HH:MM:SS")
     endDatetime: str = Field(..., description="End datetime in format YYYY-MM-DD HH:MM:SS")
+    
 
 @app.post("/generate-guide")
 def generate_guide(request: GuideRequest):
@@ -207,7 +211,11 @@ def generate_guide(request: GuideRequest):
             endDatetime=formatted_end_datetime
         )
         # Ejecutar el flujo de QA
+        qa_start_time = datetime.now()
         result = qa_chain.invoke({"query": formatted_prompt})
+        qa_end_time = datetime.now()
+        print(f"Tiempo de ejecución del flujo QA: {(qa_end_time - qa_start_time).total_seconds()} segundos")
+
         output_text = result.get('result', '')
 
         if not output_text.strip():
@@ -220,8 +228,6 @@ def generate_guide(request: GuideRequest):
         if output_text.startswith("```json"):
             output_text = output_text[7:-3].strip()  # Eliminar los delimitadores "```json"
 
-        # Convertir el texto en objeto JSON
-        json_parse_start_time = datetime.now()
         try:
             body = json.loads(output_text)
 
@@ -239,8 +245,6 @@ def generate_guide(request: GuideRequest):
             for activity in day['activities']
             if 'principalId' in activity  # Verificamos si 'principalId' existe
         ]
-
-        print(f"ids buscar en bdd:{principal_ids}")
         db_response = query_dynamo(principal_ids)
         # Verificar si db_response es None
         if db_response is None:
@@ -251,7 +255,13 @@ def generate_guide(request: GuideRequest):
         merged_itinerary = merge_activity_data(body['itinerary'], dynamo_dict)
         body['itinerary'] = merged_itinerary
         # Generar un código aleatorio para touristGuideId
-        tourist_guide_id = generate_random_guide_id()
+        db_start_time = datetime.now()
+        tourist_guide_id = generate_unique_id()
+        thread = threading.Thread(target=insert_itinerary_in_background, args=(tourist_guide_id,request.clientId, body))
+        thread.start() 
+        db_end_time = datetime.now()
+        print(f"Tiempo de ejecución alamcenamiento de la bd: {(db_end_time - db_start_time).total_seconds()} segundos")
+
         # Devolver la respuesta
         return {
             "touristGuideId": tourist_guide_id,
