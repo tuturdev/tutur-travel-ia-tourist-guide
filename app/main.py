@@ -194,7 +194,7 @@ def generate_guide(request: GuideRequest):
         - Id unico o PrincipalId (este campo es mandatorio y debe salir de la base de conocimientos no autogeneres ni te inventes) y el nombre de esta eqtiqueta simepre debe ser principalId
         - Nombre del lugar (este campo es mandatorio y debe salir de la base de conocimientos no autogeneres ni te inventes)y el nombre de esta eqtiqueta simepre debe ser name
 
-        El formato de salida debe ser formato json (las claves deben estar en ingles en formato lower camel case) y formateado a utf-8, no incluyas nada adicional que no sea la respuesta.
+        El formato de salida debe ser formato json (las claves deben estar en ingles en formato lower camel case) y formateado a utf-8 y todo debe ser envuelto en un objeto padre llamado itinerary que sera un array de los días, no incluyas nada adicional que no sea la respuesta.
         """
 
         prompt = PromptTemplate(
