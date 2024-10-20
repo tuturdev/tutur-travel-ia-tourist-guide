@@ -45,7 +45,7 @@ def query_dynamo(principal_ids):
             RequestItems={
                 'tutur-activities': {
                     'Keys': keys,
-                    'ProjectionExpression': 'principalId, description,location_lat,location_lng,totalScore, reviewsCount, estimated_time, opening_hours, s3Images'
+                    'ProjectionExpression': 'principalId, description,location_lat,location_lng,totalScore, reviewsCount, estimated_time, opening_hours, s3Images,destinationId, city'
                 }
             }
         )
@@ -74,7 +74,9 @@ def query_dynamo(principal_ids):
                     's3MainImageUrl': s3_images.get('s3MainImageUrl', {}).get('S', ''),
                     's3DetailImageUrl': s3_images.get('s3DetailImageUrl', {}).get('S', ''),
                     's3ExpandImageUrl': s3_images.get('s3ExpandImageUrl', {}).get('S', '')
-                }
+                },
+                'destinationId': item.get('destinationId', {}).get('S', ''),
+                'destination': item.get('city', {}).get('S', '')
             }
             result.append(formatted_item)
         
@@ -131,7 +133,9 @@ def merge_activity_data(itinerary, dynamo_dict):
                     'description': dynamo_dict[principal_id].get('description', ''),
                     'coordinates': dynamo_dict[principal_id].get('coordinates', []),
                     'opening_hours': dynamo_dict[principal_id].get('opening_hours', ''),
-                    's3Images': dynamo_dict[principal_id].get('s3Images', {})
+                    's3Images': dynamo_dict[principal_id].get('s3Images', {}),
+                    'destinationId': dynamo_dict[principal_id].get('destinationId', ''),
+                    'destination': dynamo_dict[principal_id].get('destination', ''),
                 })
     return itinerary
 

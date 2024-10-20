@@ -36,9 +36,32 @@ def get_all_activities():
     try:
         # Escanear todos los registros en la tabla
         response = table.scan()
-        
+      
+        # Extraer solo los campos necesarios
+        filtered_items = []
+        for item in response['Items']:
+            
+            filtered_item = {
+                'principalId': item.get('principalId'),
+                'name': item.get('name', ''),
+                'totalScore': format(float(item.get('fees_redutotalScoreced_entrance_fee', 0)), '.2f') if item.get('totalScore') else '0.00',
+                'reviewsCount': item.get('reviewsCount', 0),
+                    'estimated_time': item.get('estimated_time'),
+                    'destinationId': item.get('destinationId'),
+                    'city': item.get('city'),
+                    'description': item.get('description'),
+                    'location_lat': item.get('location_lat'),
+                    'location_lng': item.get('location_lng'),
+                    'opening_hours': item.get('opening_hours'),
+                    's3Images': item.get('s3Images'),
+                    'fees_currency': item.get('fees_currency', ''),
+                    'fees_entrance_fee': format(float(item.get('fees_entrance_fee', 0)), '.2f') if item.get('fees_entrance_fee') else '0.00',
+                    'fees_reduced_entrance_fee': format(float(item.get('fees_reduced_entrance_fee', 0)), '.2f') if item.get('fees_reduced_entrance_fee') else '0.00'
+            }
+            filtered_items.append(filtered_item)
+           
         # Convertir los objetos Decimal en la respuesta de DynamoDB
-        items = json.loads(json.dumps(response['Items'], default=decimal_default))
+        items = json.loads(json.dumps(filtered_items, default=decimal_default))
         
         return {'activities': items}
     
@@ -59,15 +82,39 @@ def get_activity_by_principal_id(request: ActivityRequest):
 
         # Realizar la consulta a DynamoDB
         response = table.query(
-            KeyConditionExpression=Key('principalId').eq(principalId)
+            KeyConditionExpression=Key('principalId').eq(principalId),
+            ProjectionExpression='principalId, #nm, totalScore, reviewsCount, estimated_time, destinationId, city, description, location_lat, location_lng, opening_hours, s3Images, fees_currency, fees_entrance_fee, fees_reduced_entrance_fee',
+            ExpressionAttributeNames={  # Se necesita usar alias para "name" ya que es una palabra reservada en DynamoDB
+                '#nm': 'name'
+            }
         )
         
         # Si no hay registros, devolver un error
         if 'Items' not in response or len(response['Items']) == 0:
             raise HTTPException(status_code=404, detail="Record not found")
         
+        item = response['Items'][0]
+        filtered_item = {
+                'principalId': item.get('principalId'),
+                'name': item.get('name', ''),
+                'totalScore': format(float(item.get('fees_redutotalScoreced_entrance_fee', 0)), '.2f') if item.get('totalScore') else '0.00',
+                'reviewsCount': item.get('reviewsCount', 0),
+                    'estimated_time': item.get('estimated_time'),
+                    'destinationId': item.get('destinationId'),
+                    'city': item.get('city'),
+                    'description': item.get('description'),
+                    'location_lat': item.get('location_lat'),
+                    'location_lng': item.get('location_lng'),
+                    'opening_hours': item.get('opening_hours'),
+                    's3Images': item.get('s3Images'),
+                    'fees_currency': item.get('fees_currency', ''),
+                    'fees_entrance_fee': format(float(item.get('fees_entrance_fee', 0)), '.2f') if item.get('fees_entrance_fee') else '0.00',
+                    'fees_reduced_entrance_fee': format(float(item.get('fees_reduced_entrance_fee', 0)), '.2f') if item.get('fees_reduced_entrance_fee') else '0.00'
+            }
+        
+        
         # Devolver el primer registro encontrado, manejando los objetos Decimal
-        item = json.loads(json.dumps(response['Items'][0], default=decimal_default))
+        item = json.loads(json.dumps(filtered_item, default=decimal_default))
         
         return {'activity': item}
     
